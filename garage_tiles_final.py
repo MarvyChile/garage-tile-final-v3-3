@@ -7,7 +7,7 @@ import math
 from streamlit_drawable_canvas import st_canvas
 
 st.set_page_config(layout="centered")
-st.title("Guía de Diseño - Piso Garage V1")
+st.title("Garage Tile Designer v3.7 - Clickable Grid")
 
 # 1. Unidad y medidas
 unidad = st.selectbox("Selecciona la unidad de medida", ["metros", "centímetros"], key="unidad")
