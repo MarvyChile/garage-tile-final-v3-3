@@ -7,7 +7,7 @@ import math
 from streamlit_drawable_canvas import st_canvas
 
 st.set_page_config(layout="centered")
-st.title("Garage Tile Designer v3.7 - Clickable Grid")
+st.title("Garage Tile Designer v3.8 - Clickable Grid")
 
 # 1. Unidad y medidas
 unidad = st.selectbox("Selecciona la unidad de medida", ["metros", "centímetros"], key="unidad")
@@ -30,43 +30,42 @@ colores = {"Blanco":"#FFFFFF","Negro":"#000000","Gris":"#B0B0B0","Gris Oscuro":"
 lista = list(colores.keys())
 base = st.selectbox("Color base", lista, index=lista.index("Blanco"))
 
-# 4. Inicializa DataFrame
+# 4. DataFrame inicial
 cols = math.ceil(ancho_m/0.4); rows = math.ceil(largo_m/0.4)
 if 'df' not in st.session_state or st.session_state.df.shape!=(rows,cols):
     st.session_state.df = pd.DataFrame([[base]*cols for _ in range(rows)])
-
 df = st.session_state.df
 
-# 5. Canvas
+# 5. Canvas de dibujo por celda
 st.subheader("Diseño: haz clic en una celda")
 canvas_size = 400
 cell_w = canvas_size/cols; cell_h = canvas_size/rows
 canvas_res = st_canvas(
     fill_color=colores[base],
-    stroke_width=0,
+    stroke_width=cell_w,
     stroke_color=colores[base],
     background_color="#EEE",
     height=canvas_size,
     width=canvas_size,
-    drawing_mode="transform",
-    key="canvas"
+    drawing_mode="rect",
+    key="canvas",
+    clear_on_update=True  # limpia canvas tras cada acción
 )
 
-# Procesa rectángulos dibujados
+# Procesa dibujo
 if canvas_res.json_data and 'objects' in canvas_res.json_data:
     for obj in canvas_res.json_data["objects"]:
         left, top = obj["left"], obj["top"]
         c = int(left//cell_w); r = int(top//cell_h)
         if r<rows and c<cols:
-            st.session_state.df.iat[rows-1-r,c] = base
-    # Reset canvas
-    st.session_state.canvas = None
+            df.iat[rows-1-r,c] = base
+    st.session_state.df = df
 
 # 6. Mostrar gráfico final
 fig, ax = plt.subplots(figsize=(cols/5, rows/5))
 for y in range(rows):
     for x in range(cols):
-        color = colores.get(st.session_state.df.iat[y,x],"#FFF")
+        color = colores.get(df.iat[y,x],"#FFF")
         ax.add_patch(plt.Rectangle((x,rows-1-y),1,1,facecolor=color,edgecolor="black"))
 # bordillos y esquineros
 if bord:
@@ -84,9 +83,9 @@ st.pyplot(fig)
 
 # 7. Conteo material
 total = rows*cols
-bord_count = sum(cols if side in ["Arriba","Abajo"] else rows for side in pos_b) - (2*len(pos_b))
+bord_count = sum([cols if side in ["Arriba","Abajo"] else rows for side in pos_b]) - 2*len(pos_b)
 esq_count = 4 if esq else 0
 st.markdown(f"**Total palmetas:** {total}")
 st.markdown(f"**Bordillos:** {bord_count}")
 st.markdown(f"**Esquineros:** {esq_count}")
-st.markdown(f"**Dimensiones (palmetas):** {cols} x {rows}")
+st.markdown(f"**Dimensiones:** {cols} x {rows} palmetas")
